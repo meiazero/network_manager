@@ -175,7 +175,7 @@ while true; do
         read -t 0.1 -n 1 OPTION
         if [[ -n $OPTION ]]; then
             break
-        Failed
+        fi
 	done
     
     case $OPTION in
