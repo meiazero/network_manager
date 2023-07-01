@@ -1,20 +1,5 @@
 #!/bin/bash
 
-# Faça um script para a gerência de rede da sua estação de trabalho (tome como
-# referência as opções apresentadas no menu abaixo), utilize a estrutura condicional CASE.
-# echo Gerência da Rede
-# echo 1 – Informações das Interfaces de Rede
-# echo 2 – Configurar o IP e a Máscara de forma temporária
-# echo 3 – Habilitar Interface de Rede
-# echo 4 – Desabilitar Interface de Rede
-# echo 5 – Configurar as configurações de rede de forma permanente
-# echo 6 – Obter IP via DHCP
-# echo 7 – Tabela de Rotas
-# echo 8 – Adicionar Gateway
-# echo 9 – Deletar gateway
-# echo 10 – Sair
-# Obs.: Para fazer a configuração permanente edite o arquivo: /etc/network/interfaces
-
 if ! [ -x "$(command -v ifconfig)" ]; then
     echo 'Error: ifconfig is not installed.' >&2
     exit 1
