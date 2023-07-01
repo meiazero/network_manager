@@ -172,7 +172,7 @@ while true; do
 	                echo -ne "\r$SYMBOL "
 	                sleep $INTERVAL
 	    done
-        read -t 0.1 -n 1 OPTION
+        read -t 0.2 -n 1 OPTION
         if [[ -n $OPTION ]]; then
             break
         fi
