@@ -1,14 +1,19 @@
 #!/bin/bash
 
 if ! [ -x "$(command -v ifconfig)" ]; then
-    echo 'Error: ifconfig is not installed.' >&2
+    echo 'ifconfig is not installed.' >&2
     exit 1
 else
     echo 'ifconfig is installed.'
 fi
 
+if [ "$(id -u)" != "0" ]; then
+    echo "Your user is not a superuser." >&2
+    exit 1
+fi
+
 show_interface_info() {
-    ifconfig -a
+    ip -c -br a
 }
 
 configure_ip_and_mask_temporarily() {
@@ -43,7 +48,7 @@ enable_interface() {
     fi
 
     if ! ifconfig $interface up >/dev/null 2>&1; then
-        echo "Error: Failed to enable the interface '$interface'." >&2
+        echo "Failed to enable the interface '$interface'." >&2
         exit 1
     fi
 
@@ -58,7 +63,7 @@ disable_interface() {
     fi
 
     if ! ifconfig $interface down >/dev/null 2>&1; then
-        echo "Error: Failed to disable the interface '$interface'." >&2
+        echo "Failed to disable the interface '$interface'." >&2
         exit 1
     fi
 
@@ -86,7 +91,7 @@ configure_ip_and_mask_permamently() {
     fi
 
     if [ ! -d "/etc/network" ]; then
-        echo "Error: /etc/network does not exist." >&2
+        echo "/etc/network does not exist." >&2
         exit 1
     else
         cp /etc/network/interfaces /etc/network/interfaces.backup
@@ -101,47 +106,24 @@ EOF"
     sudo service networking restart
 }
 
-get_dhcp_ip() {
-    interface=$1
-
-    if [ -z "$interface" ]; then
-        echo "interface is empty."
-        exit 1
-    fi
-
-    dhclient $interface
-
-    echo "interface '$interface' has been configured with the dhcp."
+get_dhcp() {
+    dhclient
 }
 
 show_table_routes() {
-    ip route show table main
+    route
 }
 
 add_gateway() {
-    ip=$1
+    gateway=$1
 
-    if [ -z "$ip" ]; then
-        echo "ip is empty."
-        exit 1
-    fi
-
-    ip route add default via $ip
-
-    echo "gateway '$ip' has been added."
+    route add default gw $gateway
 }
 
 delete_gateway() {
-    ip=$1
+    gateway=$1
 
-    if [ -z "$ip" ]; then
-        echo "ip is empty."
-        exit 1
-    fi
-
-    ip route del default via $ip
-
-    echo "gateway '$ip' has been deleted."
+    route del default gw $gateway
 }
 
 menu="
