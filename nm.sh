@@ -1,25 +1,26 @@
 #!/bin/bash
 
-if ! [ -x "$(command -v ifconfig)" ]; then
-    echo 'ifconfig is not installed.' >&2
-    exit 1
+if ! [ -x "$(command -v ip)" ]; then
+echo 'ip command is not installed.' >&2
+exit 1
 else
-    echo 'ifconfig is installed.'
+echo 'ip command is installed.'
 fi
 
 if [ "$(id -u)" != "0" ]; then
-    echo "Your user is not a superuser." >&2
-    exit 1
+echo "Your user is not a superuser." >&2
+exit 1
 fi
 
 show_interface_info() {
-    ip -c -br a
+    ip -c -br addr
 }
 
 configure_ip_and_mask_temporarily() {
     interface=$1
     ip=$2
     mascara=$3
+
 
     if [ -z "$interface" ]; then
         echo "interface is empty."
@@ -36,44 +37,42 @@ configure_ip_and_mask_temporarily() {
         exit 1
     fi
 
-    ifconfig $interface $ip netmask $mascara
+    ip addr add $ip/$mascara dev $interface
     echo "interface '$interface' has been configured with the $ip and mask $mascara."
+
 }
 
 enable_interface() {
     interface=$1
     if [ -z "$interface" ]; then
-        echo "interface is empty"
-        exit 1
+    echo "interface is empty"
+    exit 1
     fi
 
-    if ! ifconfig $interface up >/dev/null 2>&1; then
-        echo "Failed to enable the interface '$interface'." >&2
-        exit 1
-    fi
 
+    ip link set dev $interface up
     echo "interface '$interface' has been enabled."
+
 }
 
 disable_interface() {
     interface=$1
+
     if [ -z "$interface" ]; then
-        echo "interface is empty"
-        exit 1
+    echo "interface is empty"
+    exit 1
     fi
 
-    if ! ifconfig $interface down >/dev/null 2>&1; then
-        echo "Failed to disable the interface '$interface'." >&2
-        exit 1
-    fi
-
+    ip link set dev $interface down
     echo "interface '$interface' has been disabled."
+
 }
 
 configure_ip_and_mask_permamently() {
     interface=$1
     ip=$2
     mascara=$3
+
 
     if [ -z "$interface" ]; then
         echo "interface is empty."
@@ -98,12 +97,13 @@ configure_ip_and_mask_permamently() {
     fi
 
     sh -c "cat <<EOF >> /etc/network/interfaces
-iface $interface inet static
-    address $ip
-    netmask $mascara
-EOF"
 
-    sudo service networking restart
+    iface $interface inet static
+    address $ip/$mascara
+    EOF"
+
+    systemctl restart networking
+
 }
 
 get_dhcp() {
@@ -118,17 +118,19 @@ add_gateway() {
     gateway=$1
 
     route add default gw $gateway
+
 }
 
 delete_gateway() {
     gateway=$1
 
     route del default gw $gateway
+
 }
 
 menu="
 Gerência de Rede
-Escolha uma das opções abaixo: 
+Escolha uma das opções abaixo:
 1 – Informações das Interfaces de Rede
 2 – Configurar o IP e a Máscara de forma temporária
 3 – Habilitar Interface de Rede
@@ -145,55 +147,54 @@ echo "$menu"
 while true; do
     read -p "Digite a opção desejada: " option
     case $option in
-    1)
-        show_interface_info
-        exit 1
+        1) 
+            show_interface_info
+            exit 1
+            ;;
+        2)
+            read -p "Digite o nome da interface: " interface
+            read -p "Digite o IP: " ip
+            read -p "Digite a máscara: " mascara
+            configure_ip_and_mask_temporarily $interface $ip $mascara
         ;;
-    2)
-        read -p "Digite o nome da interface: " interface
-        read -p "Digite o IP: " ip
-        read -p "Digite a máscara: " mascara
-        configure_ip_and_mask_temporarily $interface $ip $mascara
+        3)
+            read -p "Digite o nome da interface: " interface
+            enable_interface $interface
         ;;
-    3)
-        read -p "Digite o nome da interface: " interface
-        enable_interface $interface
+        4)
+            read -p "Digite o nome da interface: " interface
+            disable_interface $interface
         ;;
-    4)
-        read -p "Digite o nome da interface: " interface
-        disable_interface $interface
+        5)
+            read -p "Digite o nome da interface: " interface
+            read -p "Digite o IP: " ip
+            read -p "Digite a máscara: " mascara
+            configure_ip_and_mask_permamently $interface $ip $mascara
         ;;
-    5)
-        read -p "Digite o nome da interface: " interface
-        read -p "Digite o IP: " ip
-        read -p "Digite a máscara: " mascara
-        configure_ip_and_mask_permamently $interface $ip $mascara
+        6)
+            read -p "Digite o nome da interface: " interface
+            get_dhcp_ip $interface
         ;;
-    6)
-        read -p "Digite o nome da interface: " interface
-        get_dhcp_ip $interface
+        7)
+            show_table_routes
         ;;
-    7)
-        show_table_routes
+        8)
+            read -p "Digite o IP: " ip
+            add_gateway $ip
         ;;
-    8)
-        read -p "Digite o IP: " ip
-        add_gateway $ip
+        9)
+            read -p "Digite o IP: " ip
+            delete_gateway $ip
         ;;
-    9)
-        read -p "Digite o IP: " ip
-        delete_gateway $ip
+        10)
+            exit 0
         ;;
-    10)
-        exit 0
+        s)
+            echo "$menu"
         ;;
-    s)
-        echo "$menu"
+        *)
+            echo "Opção inválida"
+            exit 1
         ;;
-    *)
-        echo "Opção inválida"
-        exit 1
-        ;;
-
     esac
 done
