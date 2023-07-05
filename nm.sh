@@ -13,7 +13,7 @@ exit 1
 fi
 
 show_interface_info() {
-    ip -c -br addr
+    ifconfig -a
 }
 
 configure_ip_and_mask_temporarily() {
